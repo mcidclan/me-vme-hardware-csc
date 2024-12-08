@@ -1,9 +1,8 @@
 ## CSC Sample Code
-This sample code demonstrates how to fill three YCbCr buffer planes from the Media Engine and then let the VME process the RGB conversion.
-
-# Overview
-The goal is to populate three buffers within the Media Engine eDRAM, which are used as the source for the conversion.
-The converted output is written to the base of the VRAM, which serves as the destination framebuffer.
+This repository provides a sample implementation for converting YCbCr data to RGB using the Media Engine and VME.
+It demonstrates how to load YCbCr planes from files on the main CPU into an uncached memory area,
+transfer them to the eDRAM of the Media Engine, and then process the RGB conversion via the VME before each buffer swap.
+The final output is written to VRAM, serving as the destination framebuffer.
 
 # Requirements
 Run `./build.sh` from a bash shell.
