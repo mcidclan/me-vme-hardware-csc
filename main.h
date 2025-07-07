@@ -13,26 +13,17 @@
 #define u16 unsigned short int
 #define u32 unsigned int
 
-#define nrp          u32*
-#define nrg(addr)    (*((nrp)(addr)))
-#define vrp          volatile u32*
-#define vrg(addr)    (*((vrp)(addr)))
+#define hwp          volatile u32*
+#define hw(addr)     (*((hwp)(addr)))
+#define uhw(addr)    ((u32*)(0x40000000 | ((u32)addr)))
 
-#define _Y_SIZE 0x20000
-#define _CBCR_SIZE 0x10000
-#define _BASE 0
-#define SRC_BUFFER_Y        _BASE
-#define SRC_BUFFER_CB       _BASE + _Y_SIZE
-#define SRC_BUFFER_CR       SRC_BUFFER_CB + _CBCR_SIZE
-#define DST_BUFFER_HEIGHT   272
-#define DST_BUFFER_WIDTH    480
-#define BLOCKS_HCOUNT   34 /* 34 x 16 */
-#define BLOCKS_WCOUNT   30 /* 30 x 16 */
+#define ME_EDRAM_BASE         0x00000000
+#define GE_EDRAM_BASE         0x04000000
+#define UNCACHED_USER_MASK    0x40000000
+#define ME_HANDLER_BASE       0xbfc00000
+#define UNCACHED_KERNEL_MASK  0xA0000000
 
-#define me_section_size (&__stop__me_section - &__start__me_section)
-#define _meLoop      vrg((0xbfc00040 + me_section_size))
-
-static inline void meDCacheWritebackInvalidAll() {
+static inline void meDcacheWritebackInvalidateAll() {
  asm("sync");
  for (int i = 0; i < 8192; i += 64) {
   asm("cache 0x14, 0(%0)" :: "r"(i));
@@ -41,16 +32,23 @@ static inline void meDCacheWritebackInvalidAll() {
  asm("sync");
 }
 
-static inline u32* meSetUserMem(const u32 size) {
+inline void meHalt() {
+  asm volatile(".word 0x70000000");
+}
+
+inline void meGetUncached32(volatile u32** const mem, const u32 size) {
   static void* _base = nullptr;
   if (!_base) {
     _base = memalign(16, size*4);
     memset(_base, 0, size);
-    return (u32*)(0x40000000 | (u32)_base);
+    *mem = (u32*)(UNCACHED_USER_MASK | (u32)_base);
+    sceKernelDcacheWritebackInvalidateAll();
+    return;
   } else if (!size) {
     free(_base);
   }
-  return nullptr;
+  *mem = nullptr;
+  return;
 }
 
 static inline u8* getByteFromFile(const char* name, const u32 size) {
@@ -74,12 +72,6 @@ static inline u16 q37(float value) {
     q37v += 1024;
   }
   return (u16)(q37v & 0x03FF);
-}
-
-static volatile bool _meExit = false;
-static inline void meExit() {
-  _meExit = true;
-  meDCacheWritebackInvalidAll();
 }
 
 template<typename T>
