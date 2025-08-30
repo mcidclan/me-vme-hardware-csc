@@ -68,13 +68,15 @@ void meHandler() {
   asm("sync");
   
   asm volatile(
-    "li          $k0, 0x30000000\n"
-    "mtc0        $k0, $12\n"
-    "sync\n"
-    "la          $k0, %0\n"
-    "li          $k1, 0x80000000\n"
-    "or          $k0, $k0, $k1\n"
-    "jr          $k0\n"
+    "li          $k0, 0x30000000     \n"
+    "mtc0        $k0, $12            \n"
+    "sync                            \n"
+    "la          $k0, %0             \n"
+    "li          $k1, 0x80000000     \n"
+    "or          $k0, $k0, $k1       \n"
+    "cache       0x8, 0($k0)         \n"
+    "sync                            \n"
+    "jr          $k0                 \n"
     "nop\n"
     :
     : "i" (meLoop)
